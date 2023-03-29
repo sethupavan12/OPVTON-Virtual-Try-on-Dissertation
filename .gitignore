@@ -1,0 +1,15 @@
+*__pycache__*
+checkpoints/*
+tensorboard/*
+result/
+bpgm/data/cloth/*
+bpgm/data/extra/*
+bpgm/data/image/*
+bpgm/data/image_segm_schp/*
+log/*
+bpgm/results/*
+myenv/*
+.idea/
+.idea/*
+*.pyc
+*.zip
