@@ -7,7 +7,7 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-""" LIP LABELS FROM CPVTON+ NOT VALID FOR THIS PROJECT
+""" LIP LABELS!
     [(0, 0, 0),    # 0=Background
     (128, 0, 0),  # 1=Hat
     (255, 0, 0),  # 2=Hair
@@ -32,17 +32,27 @@ import torchvision.transforms as transforms
     ]
 """
 
-semantic_labels = [(0, 0, 0),    # 0=Background and SKIN
-    (128, 0, 128),  # 1=Dress
-    (0,128,0),  # 2=Hair
-    (192,0,128),   # 3=Face
-    (192,128,128),  # 4=left arm
-    (64,128,128),  # 5=right arm
-    (128,192,0),     # 6=left shoe
-    (128,64,0),  # 7=left ankle
-    (0,192,0),    # 8=right shoe
-    (0,64,0),    # 9=right ankle
-    (192,0,0),    # 10=lower body
+semantic_labels = [(0, 0, 0),    # 0=Background
+    (128, 0, 0),  # 1=Hat
+    (255, 0, 0),  # 2=Hair
+    (0, 85, 0),   # 3=Glove
+    (170, 0, 51),  # 4=SunGlasses
+    (255, 85, 0),  # 5=UpperClothes
+    (0, 0, 85),     # 6=Dress
+    (0, 119, 221),  # 7=Coat
+    (85, 85, 0),    # 8=Socks
+    (0, 85, 85),    # 9=Pants
+    (85, 51, 0),    # 10=Jumpsuits
+    (52, 86, 128),  # 11=Scarf
+    (0, 128, 0),    # 12=Skirt
+    (0, 0, 255),    # 13=Face
+    (51, 170, 221),  # 14=LeftArm
+    (0, 255, 255),   # 15=RightArm
+    (85, 255, 170),  # 16=LeftLeg
+    (170, 255, 85),  # 17=RightLeg
+    (255, 255, 0),   # 18=LeftShoe
+    (255, 170, 0),    # 19=RightShoe
+    (170, 170, 50)   # 20=Skin/Neck/Chest (Newly added after running dataset_neck_skin_correction.py)
 ]
 
 
@@ -143,8 +153,8 @@ class VitonDataset(data.Dataset):
         
         # convert the labels to torch.tensor
         label_transf = torch.tensor(label_transf, dtype=torch.float32).permute(2, 0, 1).contiguous()
-        # put the body label/dress in the first channel to get good cloth and body image
-        parse_body = label_transf[1, :, :].unsqueeze(0)
+        
+        parse_body = label_transf[2, :, :].unsqueeze(0)
         # # or (comment this in case segmentations should be cloth-based)
         _label = cv2.imread(osp.join(self.db_path,"image_segm_schp", df_row["poseA"].replace(".jpg", ".png")))
         _label = cv2.cvtColor(_label, cv2.COLOR_BGR2RGB)
@@ -157,8 +167,7 @@ class VitonDataset(data.Dataset):
         
         # mask the image to get desired inputs
         cloth_image = image * parse_body
-        # Body image is the image without the cloth
-        # could directly use for virtual try-on
+        
         body_image = image * (1 - parse_body)
         
         # scale the inputs to range [-1, 1]

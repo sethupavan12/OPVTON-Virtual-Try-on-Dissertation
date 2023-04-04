@@ -85,6 +85,14 @@ def get_opt():
     opt = parser.parse_args()
     return opt
 
+
+# a function that will find the index of the image in the dataset.filepath_df given the name of the image
+def find_index(dataset, name):
+    for i in range(len(dataset.filepath_df)):
+        if dataset.filepath_df.iloc[i, 0] == name:
+            return i
+    return -1
+
 def main():
     
     opt = get_opt()
@@ -121,10 +129,28 @@ def main():
         # if images['im_name'] != "013418_0.jpg":
         #     continue
         
-        images = dataset[8855]
+        # images = dataset[1]
+        given_image = "000272_0.jpg"
+        target_image = "000288_0.jpg"
+
+
+        given_index = find_index(dataset, given_image)
+        print("Given index: ", given_index)
+        if given_index == -1:
+            print("Given Image not found")
+            return
+        
+        target_index = find_index(dataset, target_image)
+        print("Target index: ", target_index)
+        if target_index == -1:
+            print("Target Image not found")
+            return
+        
+        images = dataset[target_index]
+        images_swap = dataset[given_index]
         
 
-        images_swap = dataset[12546]
+        # images_swap = dataset[0]
         print("Name of the source image: ", images_swap['im_name'])
         print("Name of the target image: ", images['im_name'])
         
@@ -168,13 +194,13 @@ def main():
         # Load the original image
         im = Image.open(os.path.join("/scratch/c.c1984628/my_diss/bpgm/data/image", images_swap['im_name']))
         # save the original image to the sample folder
-        im.save(os.path.join("/scratch/c.c1984628/my_diss/bpgm/results/sample", "original.png"))
+        im.save(os.path.join("/scratch/c.c1984628/my_diss/testing_bpgm", "given.png"))
 
 
 
-        im = Image.fromarray(warped_cloth).save("/scratch/c.c1984628/my_diss/bpgm/results/sample/warped_cloth.png")
+        im = Image.fromarray(warped_cloth).save("/scratch/c.c1984628/my_diss/testing_bpgm/original/warped_cloth_original.png")
         #im = Image.fromarray(warped_cloth_masked).save("/scratch/c.c1984628/my_diss/bpgm/results/sample/warped_cloth_masked.png")
-        im = Image.fromarray(warped_mask).save("/scratch/c.c1984628/my_diss/bpgm/results/sample/warped_mask.png")
+        im = Image.fromarray(warped_mask).save("/scratch/c.c1984628/my_diss/testing_bpgm/original/warped_mask_original.png")
         
         # DEAL WITH SWAP
         tc = images_swap['target_cloth'].unsqueeze(0).cuda()
@@ -204,10 +230,10 @@ def main():
         # load the target image
         im = Image.open(os.path.join("/scratch/c.c1984628/my_diss/bpgm/data/image", images['im_name']))
         # save the target image to the sample folder
-        im.save(os.path.join("/scratch/c.c1984628/my_diss/bpgm/results/sample", "target.png"))
+        im.save(os.path.join("/scratch/c.c1984628/my_diss/testing_bpgm", "target.png"))
         
-        im = Image.fromarray(warped_cloth).save("/scratch/c.c1984628/my_diss/warped_cloth.png")
-        im = Image.fromarray(warped_cloth_swap).save("/scratch/c.c1984628/my_diss/bpgm/results/sample/viton_bpgm_warp.png")
+        im = Image.fromarray(warped_cloth).save("/scratch/c.c1984628/my_diss/testing_bpgm/original/warped_cloth_original.png")
+        im = Image.fromarray(warped_cloth_swap).save("/scratch/c.c1984628/my_diss/testing_bpgm/original/viton_bpgm_warp_original.png")
         #im = Image.fromarray(warped_cloth_swap).save(os.path.join("tmp.jpg"))
         break
         

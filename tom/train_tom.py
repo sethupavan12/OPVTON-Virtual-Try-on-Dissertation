@@ -1,22 +1,14 @@
-import os
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-
-import sys
-
-sys.path.append('../')
-import multiprocessing as mp
-import os
-import argparse
-import numpy as np
 import torch
-from torch.nn import functional as F
-from PIL import Image
+import torch.nn as nn
+import torch.nn.functional as F
 
+import argparse
+import os
+import time
+from unet import CAGUnetGenerator
 from bpgm.model.models import BPGM
 from bpgm.model.utils import load_checkpoint, save_checkpoint
 from bpgm.dataset import DataLoader, VitonDataset
-
 
 def get_opt():
     parser = argparse.ArgumentParser()
@@ -85,19 +77,13 @@ def get_opt():
     opt = parser.parse_args()
     return opt
 
-def main():
-    
+
+def get_warped_image():
     opt = get_opt()
     opt.train_size = 0.9
     opt.val_size = 0.1
     opt.img_size = 256
-    print(opt)
-    print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
-   
-    # create dataset 
-    # if opt.dataset == "mpv":
-    #     dataset = MPVDataset(opt)
-    # el
+
     if opt.dataset == "viton":
         dataset = VitonDataset(opt)
     else:
@@ -114,13 +100,8 @@ def main():
 
     for i in range(len(dataset.filepath_df)):
         print("Processing image: ", i)
-
-        # images = dataset[i]
-        # images_swap = dataset[i]
         
-        # if images['im_name'] != "013418_0.jpg":
-        #     continue
-        
+        # we need to get this from ['warped_cloth]
         images = dataset[8855]
         
 
@@ -208,80 +189,99 @@ def main():
         
         im = Image.fromarray(warped_cloth).save("/scratch/c.c1984628/my_diss/warped_cloth.png")
         im = Image.fromarray(warped_cloth_swap).save("/scratch/c.c1984628/my_diss/bpgm/results/sample/viton_bpgm_warp.png")
-        #im = Image.fromarray(warped_cloth_swap).save(os.path.join("tmp.jpg"))
-        break
+
+def train_cag(opt, train_loader, model, board):
+
+    # Make the model use the GPU
+    model.cuda()
+    # Set the model in training mode
+    model.train()
+
+    # Define the loss functions
+    criterionL1 = nn.L1Loss()
+    loss_fn_vgg = lpips.LPIPS(net='vgg').cuda()
+
+    # optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
+
+    for step in range(opt.keep_step):
+        iter_start_time = time.time()
+        inputs = train_loader.next_batch()
+
+        # Get the necessary inputs for CAG
+        im_label = inputs['body_label'].cuda()
         
-        # im = Image.fromarray(warped_cloth_masked_swap).save(os.path.join("sample", "bpgm_warp", "warped_cloth_masked_swap.png"))
-        # im = Image.fromarray(warped_mask_swap).save(os.path.join("sample", "bpgm_warp", "warped_mask_swap.png"))
+        im_c = inputs['cloth'].cuda()
+        im_bm = inputs['body_mask'].cuda()
+        im_cm = inputs['cloth_mask'].cuda()
+
+        # IMPLEMENT
+        warped_cloth = inputs['warped_cloth'].cuda()
 
 
-def get_opt():
-    parser = argparse.ArgumentParser()
-    # Name of the GMM or TOM model
-    parser.add_argument("--name", default="GMM")
-    # parser.add_argument("--name", default="TOM")
+        # Create the input for the CAG
+        ic = torch.cat([im_label, warped_cloth, im_c, im_bm, im_cm], dim=1)
 
-    # Add multiple workers support
-    parser.add_argument("--workers", type=int, default=mp.cpu_count() // 2)
+        # Generate the output using CAG
+        output = model(ic)
 
-    
-    # GPU IDs to use
-    # parser.add_argument("--gpu_ids", default="")
+        # Calculate the loss
+        vgg_p_loss = loss_fn_vgg.forward(output, im_c)
+        vgg_p_loss = torch.mean(vgg_p_loss)
+        loss_cloth = criterionL1(output, im_c) + 0.5 * vgg_p_loss
+        loss_mask = criterionL1(output * im_cm, im_c * im_cm) * 0.1
+        loss = loss_cloth + loss_mask
 
+        # Zero the gradients, perform backward pass, and update weights
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-    # Number of workers for dataloader (default: 1)
-    #parser.add_argument('-j', '--workers', type=int, default=1)
-    # Batch size for training (default: 32)
-    # Batch size defines the number of images that are processed at the same time
-    parser.add_argument('-b', '--batch-size', type=int, default=32)
+        if (step+1) % opt.display_count == 0:
+            visuals = [[output, im_c, warped_cloth],
+                       [output * im_cm, im_c * im_cm, im_cm]]
 
-    # Path to the data folder
-    parser.add_argument("--dataroot", default="/scratch/c.c1984628/my_diss/bpgm/data")
+            board_add_images(board, 'combine', visuals, step+1)
+            board.add_scalar('metric', loss.item(), step+1)
+            t = time.time() - iter_start_time
+            print('step: %8d, time: %.3f, loss: %4f' % (step+1, t, loss.item()), flush=True)
 
-    # Training mode or testing mode
-    parser.add_argument("--datamode", default="train")
+        if (step+1) % opt.save_count == 0:
+            save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%06d.pth' % (step+1)))
 
-    # What are we training/testing here
-    parser.add_argument("--stage", default="GMM")
-    # parser.add_argument("--stage", default="TOM")
+def main():
+    opt = get_opt()
+    print(opt)
+    print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
 
-    # Path to the list of training/testing images
-    parser.add_argument("--data_list", default="/scratch/c.c1984628/my_diss/bpgm/data/train_pairs.txt")
+    # create dataset
+    train_dataset = CPDataset(opt)
 
-    # choose dataset
-    parser.add_argument("--dataset", default="viton")
+    # create dataloader
+    train_loader = CPDataLoader(opt, train_dataset)
 
-    # fine_width, fine_height: size of the input image to the network
-    parser.add_argument("--fine_width", type=int, default=192)
-    parser.add_argument("--fine_height", type=int, default=256)
-    parser.add_argument("--radius", type=int, default=5)
-    parser.add_argument("--grid_size", type=int, default=5)
-    
-    # lr = learning rate
-    parser.add_argument('--lr', type=float, default=0.0001,
-                        help='initial learning rate for adam')
-    # tensorboard_dir: path to the folder where tensorboard files are saved
-    parser.add_argument('--tensorboard_dir', type=str,
-                        default='tensorboard', help='save tensorboard infos')
-    parser.add_argument('--checkpoint_dir', type=str,
-                        default='checkpoints', help='save checkpoint infos')
-    parser.add_argument('--checkpoint', type=str, default='',
-                        help='model checkpoint for initialization')
-    # display_count: how often to display the training results defaulted to every 20 steps
-    parser.add_argument("--display_count", type=int, default=20)
-    # save_count: how often to save the model defaulted to every 5000 steps
-    parser.add_argument("--save_count", type=int, default=5000)
-    # keep_step: how many steps to train the model for
-    parser.add_argument("--keep_step", type=int, default=100000)
-    # decay_step: how many steps to decay the learning rate for
-    parser.add_argument("--decay_step", type=int, default=100000)
-    # shuffle: shuffle the input data
-    parser.add_argument("--shuffle", action='store_true',
-                        help='shuffle input data')
+    # visualization
+    if not os.path.exists(opt.tensorboard_dir):
+        os.makedirs(opt.tensorboard_dir)
+    board = SummaryWriter(logdir=os.path.join(opt.tensorboard_dir, opt.name))
 
-    opt = parser.parse_args()
-    return opt
+    # create model & train & save the final checkpoint
+    if opt.stage == 'GMM':
+        model = GMM(opt)
+        if not opt.checkpoint == '' and os.path.exists(opt.checkpoint):
+            load_checkpoint(model, opt.checkpoint)
+        train_gmm(opt, train_loader, model, board)
+        save_checkpoint(model, os.path.join(
+            opt.checkpoint_dir, opt.name, 'gmm_final.pth'))
+    elif opt.stage == 'TOM':
+        # model = UnetGenerator(25, 4, 6, ngf=64, norm_layer=nn.InstanceNorm2d)  # CP-VTON
+        cag_model = CAGUnetGenerator(input_nc=22, output_nc=3, num_downs=7, ngf=64) # CP-VTON+
+        if not opt.checkpoint == '' and os.path.exists(opt.checkpoint):
+            load_checkpoint(model, opt.checkpoint)
+        train_tom(opt, train_loader, model, board)
+        save_checkpoint(model, os.path.join(
+            opt.checkpoint_dir, opt.name, 'tom_final.pth'))
+    else:
+        raise NotImplementedError('Model [%s] is not implemented' % opt.stage)
 
-
-if __name__ == "__main__":
-    main()
+    print('Finished training %s, named: %s!' % (opt.stage, opt.name))

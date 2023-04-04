@@ -15,6 +15,7 @@ from tensorboardX import SummaryWriter
 import argparse
 import multiprocessing as mp
 import lpips
+import optuna
 # Import all the things we need for the model
 from bpgm.model.models import BPGM
 from bpgm.model.utils import load_checkpoint, save_checkpoint
@@ -23,7 +24,8 @@ from bpgm.utils.loss import VGGLoss, SSIMLoss
 from bpgm.utils.visualization import board_add_images
 
 
-def train_bpgm(opt, train_loader, model, board):
+# def train_bpgm(opt, train_loader, model, board):
+def train_bpgm(opt, train_loader, model, board, weight_vgg_p_loss, weight_mask_loss,validation):
 
     # Make the model use the GPU
     model.cuda()
@@ -41,6 +43,8 @@ def train_bpgm(opt, train_loader, model, board):
     # SSIM loss
     #criterionSSIM = SSIMLoss().cuda()
     loss_fn_vgg = lpips.LPIPS(net='vgg').cuda()
+    validation_loss_sum = 0
+    validation_step_count = 0
 
 
 
@@ -74,8 +78,8 @@ def train_bpgm(opt, train_loader, model, board):
         vgg_p_loss = loss_fn_vgg.forward(warped_cloth, im_c)
         # convert vgg_p_loss to a scalar
         vgg_p_loss = torch.mean(vgg_p_loss)
-        loss_cloth = criterionL1(warped_cloth, im_c) + 0.5 * vgg_p_loss 
-        loss_mask = criterionL1(warped_mask, im_cm) * 0.1
+        loss_cloth = criterionL1(warped_cloth, im_c) + weight_vgg_p_loss * vgg_p_loss 
+        loss_mask = criterionL1(warped_mask, im_cm) * weight_mask_loss
         loss = loss_cloth + loss_mask
         
         # Zero the gradients, perform backward pass, and update weights
@@ -100,6 +104,25 @@ def train_bpgm(opt, train_loader, model, board):
 
         if (step+1) % opt.save_count == 0:
             save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%06d.pth' % (step+1)))
+        
+        if validation:
+            return loss.item()
+
+
+# def objective(trial):
+
+#     # Suggest hyperparameter values using Optuna
+#     weight_vgg_p_loss = trial.suggest_float("weight_vgg_p_loss", 0.1, 1.0)
+#     weight_mask_loss = trial.suggest_float("weight_mask_loss", 0.01, 0.3)
+
+#     # Run training with the suggested hyperparameters
+#     validation_loss = train_bpgm(opt, train_loader, model, board, weight_vgg_p_loss, weight_mask_loss)
+
+#     # Return the objective value you want to minimize (e.g., validation loss)
+#     return validation_loss
+
+
+
 
 def get_opt():
     parser = argparse.ArgumentParser()
@@ -170,36 +193,42 @@ def get_opt():
 
 def main():
     opt = get_opt()
-    opt.train_size = 0.9
-    opt.val_size = 0.1
+    opt.train_size = 0.7
+    opt.val_size = 0.3
     opt.img_size = 256
     print(opt)
     print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
-   
-    # create dataset 
-    # if opt.dataset == "mpv":
-    #     train_dataset = MPVDataset(opt)
-    if opt.dataset == "viton":
-        train_dataset = VitonDataset(opt)
-    else:
-        raise NotImplementedError
-    
-    # create dataloader
+
+    train_dataset = VitonDataset(opt)
     train_loader = DataLoader(opt, train_dataset)
 
-    # visualization
     if not os.path.exists(opt.tensorboard_dir):
         os.makedirs(opt.tensorboard_dir)
     board = SummaryWriter(logdir=os.path.join(opt.tensorboard_dir, opt.name))
-   
-    # create model & train & save the final checkpoint
+
     model = BPGM(opt)
     if not opt.checkpoint == '' and os.path.exists(opt.checkpoint):
         load_checkpoint(model, opt.checkpoint)
-        
-    train_bpgm(opt, train_loader, model, board)
+
+    def objective(trial):
+        weight_vgg_p_loss = trial.suggest_float('weight_vgg_p_loss', 0.1, 1.0)
+        weight_mask_loss = trial.suggest_float('weight_mask_loss', 0.1, 1.0)
+
+        validation_loss = train_bpgm(opt, train_loader, model, board, weight_vgg_p_loss, weight_mask_loss, validation=True)
+        return validation_loss
+
+    study = optuna.create_study(direction='minimize')
+    study.optimize(objective, n_trials=50)
+
+    best_params = study.best_params
+    best_weight_vgg_p_loss = best_params['weight_vgg_p_loss']
+    best_weight_mask_loss = best_params['weight_mask_loss']
+
+    print("Finished hyperparameter tuning, best parameters vgg_p_loss: %f, mask_loss: %f" % (best_weight_vgg_p_loss, best_weight_mask_loss))
+
+    train_bpgm(opt, train_loader, model, board, best_weight_vgg_p_loss, best_weight_mask_loss, validation=False)
     save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'bpgm_final.pth'))
-  
+
     print('Finished training %s, named: %s!' % (opt.stage, opt.name))
 
 if __name__ == "__main__":
