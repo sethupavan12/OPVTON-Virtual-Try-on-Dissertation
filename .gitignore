@@ -7,6 +7,8 @@ bpgm/data/extra/*
 bpgm/data/image/*
 bpgm/data/image_segm_schp/*
 log/*
+tom/checkpoints/*
+tom/tensorboard/*
 bpgm/results/*
 myenv/*
 .idea/

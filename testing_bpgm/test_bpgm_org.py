@@ -130,8 +130,8 @@ def main():
         #     continue
         
         # images = dataset[1]
-        given_image = "000272_0.jpg"
-        target_image = "000288_0.jpg"
+        given_image = "006288_0.jpg"
+        target_image = "006289_0.jpg"
 
 
         given_index = find_index(dataset, given_image)

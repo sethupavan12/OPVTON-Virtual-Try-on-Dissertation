@@ -33,15 +33,18 @@ def train_bpgm(opt, train_loader, model, board):
     # Define the loss functions
     # L1 loss
     # L1 loss is the sum of the absolute differences between the predicted and the target values
-    criterionL1 = nn.L1Loss()
+    #criterionL1 = nn.L1Loss()
     # VGG loss
 
     # criterionVGG = VGGLoss() # This is the loss function used in the original paper
 
     # SSIM loss
     #criterionSSIM = SSIMLoss().cuda()
-    loss_fn_vgg = lpips.LPIPS(net='vgg').cuda()
+    # loss_fn_vgg = lpips.LPIPS(net='vgg').cuda()
 
+    #CLASSIC LOSS
+    criterionL1 = nn.L1Loss()
+    criterionVGG = VGGLoss()
 
 
     # optimizer
@@ -71,10 +74,15 @@ def train_bpgm(opt, train_loader, model, board):
         
         # Calculate the loss
         # perceptual loss between warped_cloth and cloth
-        vgg_p_loss = loss_fn_vgg.forward(warped_cloth, im_c)
+        #vgg_p_loss = loss_fn_vgg.forward(warped_cloth, im_c)
         # convert vgg_p_loss to a scalar
-        vgg_p_loss = torch.mean(vgg_p_loss)
-        loss_cloth = criterionL1(warped_cloth, im_c) + 0.5 * vgg_p_loss 
+        # vgg_p_loss = torch.mean(vgg_p_loss)
+        # loss_cloth = criterionL1(warped_cloth, im_c) + 0.5 * vgg_p_loss 
+        # loss_mask = criterionL1(warped_mask, im_cm) * 0.1
+        # loss = loss_cloth + loss_mask
+
+        # CLASSIC LOSS
+        loss_cloth = criterionL1(warped_cloth, im_c) + 0.1 * criterionVGG(warped_cloth, im_c)
         loss_mask = criterionL1(warped_mask, im_cm) * 0.1
         loss = loss_cloth + loss_mask
         

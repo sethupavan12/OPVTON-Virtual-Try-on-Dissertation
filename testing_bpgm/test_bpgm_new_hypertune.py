@@ -168,6 +168,8 @@ def main():
         tcm = images['target_cloth_mask'].unsqueeze(0).cuda()
         im_bm = images['body_mask'].unsqueeze(0).cuda()
         im_label = images['body_label'].unsqueeze(0).cuda()
+        print("im_label shape: ", im_label.shape)
+        print("tc shape: ", tc.shape)
         # agnostic = images['agnostic'].unsqueeze(0).cuda()
             
         grid = model(im_label, tc)

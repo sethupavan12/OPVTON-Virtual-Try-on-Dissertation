@@ -28,5 +28,5 @@ pip3 install piqa
 pip3 install optuna
 pip3 install pytorch-msssim
 
-# Run the python script
-python3 /scratch/c.c1984628/my_diss/train_bpgm_hyper.py --checkpoint_dir "/scratch/c.c1984628/my_diss/checkpoints/classic_loss_cvton_new_channels" --name "GMM_with_classic_loss_new_channel" --save_count 15000
+
+python3 /scratch/c.c1984628/my_diss/train_bpgm_hyper.py --checkpoint_dir "/scratch/c.c1984628/my_diss/checkpoints/new_ssim_loss_new_channels_higher_ssim_weight" --name "GMM_with_SSIM_loss_new_channels_higher_weight"

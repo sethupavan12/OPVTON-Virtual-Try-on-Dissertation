@@ -22,26 +22,20 @@ from bpgm.model.utils import load_checkpoint, save_checkpoint
 from bpgm.dataset import DataLoader, VitonDataset
 from bpgm.utils.loss import VGGLoss, SSIMLoss
 from bpgm.utils.visualization import board_add_images
+from pytorch_msssim import ssim
 
 
 # def train_bpgm(opt, train_loader, model, board):
-def train_bpgm(opt, train_loader, model, board, weight_vgg_p_loss, weight_mask_loss,validation):
+def train_bpgm(opt, train_loader, model, board, weight_mask_loss,validation):
 
     # Make the model use the GPU
     model.cuda()
     # Set the model in training mode
     model.train()
-
-    # Define the loss functions
-    # L1 loss
     # L1 loss is the sum of the absolute differences between the predicted and the target values
     criterionL1 = nn.L1Loss()
-    # VGG loss
-
     # criterionVGG = VGGLoss() # This is the loss function used in the original paper
 
-    # SSIM loss
-    #criterionSSIM = SSIMLoss().cuda()
     loss_fn_vgg = lpips.LPIPS(net='vgg').cuda()
     validation_loss_sum = 0
     validation_step_count = 0
@@ -75,12 +69,13 @@ def train_bpgm(opt, train_loader, model, board, weight_vgg_p_loss, weight_mask_l
         
         # Calculate the loss
         # perceptual loss between warped_cloth and cloth
-        vgg_p_loss = loss_fn_vgg.forward(warped_cloth, im_c)
+        #vgg_p_loss = loss_fn_vgg.forward(warped_cloth, im_c)
+        ssim_loss = 1 - ssim( warped_cloth, im_c, data_range=255, size_average=True)
         # convert vgg_p_loss to a scalar
-        vgg_p_loss = torch.mean(vgg_p_loss)
-        loss_cloth = criterionL1(warped_cloth, im_c) + weight_vgg_p_loss * vgg_p_loss 
+        #vgg_p_loss = torch.mean(vgg_p_loss)
+        loss_cloth = criterionL1(warped_cloth, im_c) 
         loss_mask = criterionL1(warped_mask, im_cm) * weight_mask_loss
-        loss = loss_cloth + loss_mask
+        loss = loss_cloth + loss_mask + ssim_loss 
         
         # Zero the gradients, perform backward pass, and update weights
         optimizer.zero_grad()
@@ -98,7 +93,9 @@ def train_bpgm(opt, train_loader, model, board, weight_vgg_p_loss, weight_mask_l
                     [tcm, warped_mask, im_cm]]
             
             board_add_images(board, 'combine', visuals, step+1)
-            board.add_scalar('metric', loss.item(), step+1)
+            board.add_scalar('Loss', loss.item(), step+1)
+            board.add_scalar('loss_cloth_L1', loss_cloth.item(), step+1)
+            board.add_scalar('ssim_loss', ssim_loss.item(), step+1)
             t = time.time() - iter_start_time
             print('step: %8d, time: %.3f, loss: %4f' % (step+1, t, loss.item()), flush=True)
 
@@ -211,22 +208,25 @@ def main():
         load_checkpoint(model, opt.checkpoint)
 
     def objective(trial):
-        weight_vgg_p_loss = trial.suggest_float('weight_vgg_p_loss', 0.1, 1.0)
+        #weight_ssim_loss = trial.suggest_float('weight_ssim_loss', 0.1, 1.0)
         weight_mask_loss = trial.suggest_float('weight_mask_loss', 0.1, 1.0)
 
-        validation_loss = train_bpgm(opt, train_loader, model, board, weight_vgg_p_loss, weight_mask_loss, validation=True)
+        # validation_loss = train_bpgm(opt, train_loader, model, board, weight_ssim_loss, weight_mask_loss, validation=True)
+        validation_loss = train_bpgm(opt, train_loader, model, board, weight_mask_loss, validation=True)
+
         return validation_loss
 
     study = optuna.create_study(direction='minimize')
     study.optimize(objective, n_trials=50)
 
     best_params = study.best_params
-    best_weight_vgg_p_loss = best_params['weight_vgg_p_loss']
+    #best_weight_ssim_loss = best_params['weight_ssim_loss']
     best_weight_mask_loss = best_params['weight_mask_loss']
 
-    print("Finished hyperparameter tuning, best parameters vgg_p_loss: %f, mask_loss: %f" % (best_weight_vgg_p_loss, best_weight_mask_loss))
+    print("Best mask loss weight: {}".format(best_weight_mask_loss))
 
-    train_bpgm(opt, train_loader, model, board, best_weight_vgg_p_loss, best_weight_mask_loss, validation=False)
+    # train_bpgm(opt, train_loader, model, board, best_weight_ssim_loss, best_weight_mask_loss, validation=False)
+    train_bpgm(opt, train_loader, model, board, best_weight_mask_loss, validation=False)
     save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'bpgm_final.pth'))
 
     print('Finished training %s, named: %s!' % (opt.stage, opt.name))

@@ -276,6 +276,8 @@ class BPGM(nn.Module):
             n_layers = int(math.log(opt.img_size[0], 2)) - 5
             self.resolution = opt.img_size
         
+            # self.in_channels = 11
+            # for the sake of it
             self.in_channels = 21
             
         # linear_dim = 64 * 4 * (2 + (opt.dataset == "viton"))

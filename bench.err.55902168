@@ -1,0 +1,55 @@
+[32m[I 2023-04-07 22:03:35,243][0m A new study created in memory with name: no-name-cb78f75f-5dee-4a5e-b092-dcf8b50582ee[0m
+/scratch/c.c1984628/my_diss/myenv/lib/python3.9/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/scratch/c.c1984628/my_diss/myenv/lib/python3.9/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+[32m[I 2023-04-07 22:03:51,705][0m Trial 0 finished with value: 0.601764440536499 and parameters: {'weight_mask_loss': 0.7031199178585154}. Best is trial 0 with value: 0.601764440536499.[0m
+[32m[I 2023-04-07 22:03:53,503][0m Trial 1 finished with value: 0.13097918033599854 and parameters: {'weight_mask_loss': 0.4617132880774817}. Best is trial 1 with value: 0.13097918033599854.[0m
+[32m[I 2023-04-07 22:03:55,267][0m Trial 2 finished with value: 0.1970777064561844 and parameters: {'weight_mask_loss': 0.6456279966124483}. Best is trial 1 with value: 0.13097918033599854.[0m
+[32m[I 2023-04-07 22:03:56,941][0m Trial 3 finished with value: 0.2139972448348999 and parameters: {'weight_mask_loss': 0.6358362604642248}. Best is trial 1 with value: 0.13097918033599854.[0m
+[32m[I 2023-04-07 22:03:58,525][0m Trial 4 finished with value: 0.10738234966993332 and parameters: {'weight_mask_loss': 0.32367976322801734}. Best is trial 4 with value: 0.10738234966993332.[0m
+[32m[I 2023-04-07 22:04:00,139][0m Trial 5 finished with value: 0.23052652180194855 and parameters: {'weight_mask_loss': 0.7260337922266162}. Best is trial 4 with value: 0.10738234966993332.[0m
+[32m[I 2023-04-07 22:04:01,762][0m Trial 6 finished with value: 0.29885414242744446 and parameters: {'weight_mask_loss': 0.9421878647644759}. Best is trial 4 with value: 0.10738234966993332.[0m
+[32m[I 2023-04-07 22:04:03,388][0m Trial 7 finished with value: 0.12608548998832703 and parameters: {'weight_mask_loss': 0.3884424332542201}. Best is trial 4 with value: 0.10738234966993332.[0m
+[32m[I 2023-04-07 22:04:05,030][0m Trial 8 finished with value: 0.11818920075893402 and parameters: {'weight_mask_loss': 0.42399164516800014}. Best is trial 4 with value: 0.10738234966993332.[0m
+[32m[I 2023-04-07 22:04:06,627][0m Trial 9 finished with value: 0.18718431890010834 and parameters: {'weight_mask_loss': 0.6498224094381003}. Best is trial 4 with value: 0.10738234966993332.[0m
+[32m[I 2023-04-07 22:04:08,372][0m Trial 10 finished with value: 0.029829595237970352 and parameters: {'weight_mask_loss': 0.10839924491632241}. Best is trial 10 with value: 0.029829595237970352.[0m
+[32m[I 2023-04-07 22:04:09,951][0m Trial 11 finished with value: 0.03882036358118057 and parameters: {'weight_mask_loss': 0.13016781816280373}. Best is trial 10 with value: 0.029829595237970352.[0m
+[32m[I 2023-04-07 22:04:11,597][0m Trial 12 finished with value: 0.0418398380279541 and parameters: {'weight_mask_loss': 0.13830502510099438}. Best is trial 10 with value: 0.029829595237970352.[0m
+[32m[I 2023-04-07 22:04:13,220][0m Trial 13 finished with value: 0.0274887103587389 and parameters: {'weight_mask_loss': 0.10795702179216024}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:14,849][0m Trial 14 finished with value: 0.05913279950618744 and parameters: {'weight_mask_loss': 0.26700675080764924}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:16,470][0m Trial 15 finished with value: 0.03317144140601158 and parameters: {'weight_mask_loss': 0.11736996549198231}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:18,102][0m Trial 16 finished with value: 0.0699467584490776 and parameters: {'weight_mask_loss': 0.24346145373698772}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:19,730][0m Trial 17 finished with value: 0.0632430911064148 and parameters: {'weight_mask_loss': 0.23398823091798687}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:21,327][0m Trial 18 finished with value: 0.03197486698627472 and parameters: {'weight_mask_loss': 0.10865564308531668}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:22,947][0m Trial 19 finished with value: 0.047438833862543106 and parameters: {'weight_mask_loss': 0.19316631303824233}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:24,543][0m Trial 20 finished with value: 0.08257779479026794 and parameters: {'weight_mask_loss': 0.3266781350958756}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:26,140][0m Trial 21 finished with value: 0.03326085954904556 and parameters: {'weight_mask_loss': 0.11877354912572717}. Best is trial 13 with value: 0.0274887103587389.[0m
+[32m[I 2023-04-07 22:04:27,801][0m Trial 22 finished with value: 0.024953141808509827 and parameters: {'weight_mask_loss': 0.10011669918026904}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:29,468][0m Trial 23 finished with value: 0.05383956432342529 and parameters: {'weight_mask_loss': 0.21221338039888402}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:31,092][0m Trial 24 finished with value: 0.04259318485856056 and parameters: {'weight_mask_loss': 0.18313132613283717}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:32,724][0m Trial 25 finished with value: 0.08946365863084793 and parameters: {'weight_mask_loss': 0.2901495120465691}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:34,322][0m Trial 26 finished with value: 0.04253360256552696 and parameters: {'weight_mask_loss': 0.187114852818634}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:35,936][0m Trial 27 finished with value: 0.09136872738599777 and parameters: {'weight_mask_loss': 0.35523984962719046}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:37,542][0m Trial 28 finished with value: 0.08373234421014786 and parameters: {'weight_mask_loss': 0.2973269714417751}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:39,173][0m Trial 29 finished with value: 0.045817501842975616 and parameters: {'weight_mask_loss': 0.18122520859766242}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:40,821][0m Trial 30 finished with value: 0.05832643061876297 and parameters: {'weight_mask_loss': 0.2359959937107696}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:42,400][0m Trial 31 finished with value: 0.031199196353554726 and parameters: {'weight_mask_loss': 0.12132414058943396}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:44,031][0m Trial 32 finished with value: 0.028210509568452835 and parameters: {'weight_mask_loss': 0.1097981237623251}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:45,678][0m Trial 33 finished with value: 0.02678070031106472 and parameters: {'weight_mask_loss': 0.10025975393970761}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:47,313][0m Trial 34 finished with value: 0.045069850981235504 and parameters: {'weight_mask_loss': 0.16717269006592497}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:48,949][0m Trial 35 finished with value: 0.06572593748569489 and parameters: {'weight_mask_loss': 0.26298746691280617}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:50,545][0m Trial 36 finished with value: 0.04368000477552414 and parameters: {'weight_mask_loss': 0.17059665052630646}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:52,178][0m Trial 37 finished with value: 0.1298704594373703 and parameters: {'weight_mask_loss': 0.4831932331129447}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:53,828][0m Trial 38 finished with value: 0.05863967910408974 and parameters: {'weight_mask_loss': 0.21406599070728055}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:55,454][0m Trial 39 finished with value: 0.035042472183704376 and parameters: {'weight_mask_loss': 0.15859135867267557}. Best is trial 22 with value: 0.024953141808509827.[0m
+[32m[I 2023-04-07 22:04:57,095][0m Trial 40 finished with value: 0.023209774866700172 and parameters: {'weight_mask_loss': 0.10382805079696987}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:04:58,732][0m Trial 41 finished with value: 0.04180207848548889 and parameters: {'weight_mask_loss': 0.15483800346490895}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:00,340][0m Trial 42 finished with value: 0.02592919021844864 and parameters: {'weight_mask_loss': 0.10012467239551592}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:01,977][0m Trial 43 finished with value: 0.06136327609419823 and parameters: {'weight_mask_loss': 0.21553702766503502}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:03,615][0m Trial 44 finished with value: 0.024795787408947945 and parameters: {'weight_mask_loss': 0.10721547653360897}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:05,217][0m Trial 45 finished with value: 0.03549451008439064 and parameters: {'weight_mask_loss': 0.155568905929148}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:06,818][0m Trial 46 finished with value: 0.07033062726259232 and parameters: {'weight_mask_loss': 0.2875482922933571}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:08,435][0m Trial 47 finished with value: 0.03662613406777382 and parameters: {'weight_mask_loss': 0.15295318839017147}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:10,031][0m Trial 48 finished with value: 0.06541309505701065 and parameters: {'weight_mask_loss': 0.24907646869020086}. Best is trial 40 with value: 0.023209774866700172.[0m
+[32m[I 2023-04-07 22:05:11,671][0m Trial 49 finished with value: 0.026725834235548973 and parameters: {'weight_mask_loss': 0.10515385763043464}. Best is trial 40 with value: 0.023209774866700172.[0m

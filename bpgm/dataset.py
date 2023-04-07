@@ -135,8 +135,9 @@ class VitonDataset(data.Dataset):
         # convert the labels to one-hot encoding
         # what is semantic_labels? It is a list of colors that are used to label the body parts in the image
         # the order of the colors in the list is important
-
-
+        # array with 21 elements, each element is a tuple of 3 elements
+        # semantic_labels 
+        for_the_sake_of_it = np.random.randint(0, 255, (21, 3))
         label_transf = np.zeros((*self.opt.img_size, len(semantic_labels)))
         for i, color in enumerate(semantic_labels):
             label_transf[np.all(label == color, axis=-1), i] = 1.0
@@ -144,7 +145,9 @@ class VitonDataset(data.Dataset):
         # convert the labels to torch.tensor
         label_transf = torch.tensor(label_transf, dtype=torch.float32).permute(2, 0, 1).contiguous()
         # put the body label/dress in the first channel to get good cloth and body image
+        # NORMAL AND PROPER
         parse_body = label_transf[1, :, :].unsqueeze(0)
+        # parse_body = label_transf[2, :, :].unsqueeze(0) # for the sake of it need 2
         # # or (comment this in case segmentations should be cloth-based)
         _label = cv2.imread(osp.join(self.db_path,"image_segm_schp", df_row["poseA"].replace(".jpg", ".png")))
         _label = cv2.cvtColor(_label, cv2.COLOR_BGR2RGB)
