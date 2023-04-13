@@ -15,3 +15,6 @@ myenv/*
 .idea/*
 *.pyc
 *.zip
+
+# ignore all files that start with "bench."
+bench.*

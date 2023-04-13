@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/scratch/c.c1984628/my_diss/tom/help.py", line 15, in <module>
-    from bpgm.model.models import BPGM
-ModuleNotFoundError: No module named 'bpgm'

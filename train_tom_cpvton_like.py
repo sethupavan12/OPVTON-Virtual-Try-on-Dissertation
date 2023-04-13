@@ -12,71 +12,212 @@ import argparse
 import multiprocessing as mp
 import lpips
 # Import all the things we need for the model
-from bpgm.model.models import BPGM
 from bpgm.model.utils import load_checkpoint, save_checkpoint
 from bpgm.dataset import DataLoader, VitonDataset
 from bpgm.utils.loss import VGGLoss, SSIMLoss
 from bpgm.utils.visualization import board_add_images
 from PIL import Image
+from pytorch_msssim import ssim
+import torchvision
 
-class UNetDown(nn.Module):
+
+
+# class UNetDown(nn.Module):
+#     def __init__(self, in_channels, out_channels):
+#         super().__init__()
+#         self.model = nn.Sequential(
+#             nn.Conv2d(in_channels, out_channels, 4, stride=2, padding=1),
+#             nn.InstanceNorm2d(out_channels),
+#             nn.LeakyReLU(0.2, inplace=True)
+#         )
+
+#     def forward(self, x):
+#         return self.model(x)
+
+# class UNetUp(nn.Module):
+#     def __init__(self, in_channels, out_channels):
+#         super().__init__()
+#         self.model = nn.Sequential(
+#             nn.ConvTranspose2d(in_channels, out_channels, 4, stride=2, padding=1),
+#             nn.InstanceNorm2d(out_channels),
+#             nn.ReLU(inplace=True)
+#         )
+
+#     def forward(self, x, skip_input):
+#         x = self.model(x)
+#         x = torch.cat((x, skip_input), 1)
+#         return x
+
+# class VirtualTryOnUNet(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+
+#         # Encoder
+#         self.down1 = UNetDown(7, 64) # 3 (agnostic) + 3 (cloth) + 1 (cloth_mask)
+#         self.down2 = UNetDown(64, 128)
+#         self.down3 = UNetDown(128, 256)
+#         self.down4 = UNetDown(256, 512)
+
+#         # Decoder
+#         self.up1 = UNetUp(512, 256)
+#         self.up2 = UNetUp(256 * 2, 128)
+#         self.up3 = UNetUp(128 * 2, 64)
+
+#         # Output
+#         self.final = nn.Sequential(
+#             nn.ConvTranspose2d(64 * 2, 4, 4, stride=2, padding=1),
+#             nn.Tanh()
+#         )
+
+#     def forward(self, x):
+#         d1 = self.down1(x)
+#         d2 = self.down2(d1)
+#         d3 = self.down3(d2)
+#         d4 = self.down4(d3)
+
+#         u1 = self.up1(d4, d3)
+#         u2 = self.up2(u1, d2)
+#         u3 = self.up3(u2, d1)
+
+#         output = self.final(u3)
+
+#         p_rendered, m_composite = torch.split(output, 3, 1)
+#         p_rendered = torch.tanh(p_rendered)
+#         m_composite = torch.sigmoid(m_composite)
+
+#         return p_rendered, m_composite
+
+# class Generator(nn.Module):
+#     def __init__(self):
+#         super(Generator, self).__init__()
+#         self.model = nn.Sequential(
+#             nn.Conv2d(7, 64, kernel_size=3, stride=1, padding=1),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(128),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(256),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(512, 1024, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(1024),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(inplace=True),
+#             nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+#             nn.BatchNorm2d(256),
+#             nn.ReLU(inplace=True),
+#             nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
+#             nn.BatchNorm2d(128),
+#             nn.ReLU(inplace=True),
+#             nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+#             nn.BatchNorm2d(64),
+#             nn.ReLU(inplace=True),
+#             nn.ConvTranspose2d(64, 4, kernel_size=3, stride=1, padding=1),
+#         )
+
+#     def forward(self, x):
+#         x = self.model(x)
+#         # Resize to 256x196
+#         x = F.interpolate(x, size=(256, 192), mode='bilinear', align_corners=False)
+        
+#         p_rendered, m_composite = torch.split(x, 3, 1)
+#         p_rendered = torch.tanh(p_rendered)
+#         m_composite = torch.sigmoid(m_composite)
+
+#         return p_rendered, m_composite
+
+
+class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.model = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 4, stride=2, padding=1),
-            nn.InstanceNorm2d(out_channels),
-            nn.LeakyReLU(0.2, inplace=True)
-        )
-
-    def forward(self, x):
-        return self.model(x)
-
-class UNetUp(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.model = nn.Sequential(
-            nn.ConvTranspose2d(in_channels, out_channels, 4, stride=2, padding=1),
-            nn.InstanceNorm2d(out_channels),
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
 
-    def forward(self, x, skip_input):
-        x = self.model(x)
-        x = torch.cat((x, skip_input), 1)
-        return x
+    def forward(self, x):
+        return self.conv(x)
 
-class VirtualTryOnUNet(nn.Module):
-    def __init__(self):
+class Down(nn.Module):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
-
-        # Encoder
-        self.down1 = UNetDown(7, 64) # 3 (agnostic) + 3 (cloth) + 1 (cloth_mask)
-        self.down2 = UNetDown(64, 128)
-        self.down3 = UNetDown(128, 256)
-        self.down4 = UNetDown(256, 512)
-
-        # Decoder
-        self.up1 = UNetUp(512, 256)
-        self.up2 = UNetUp(256 * 2, 128)
-        self.up3 = UNetUp(128 * 2, 64)
-
-        # Output
-        self.final = nn.Sequential(
-            nn.ConvTranspose2d(64 * 2, 4, 4, stride=2, padding=1),
-            nn.Tanh()
+        self.down = nn.Sequential(
+            nn.MaxPool2d(2),
+            DoubleConv(in_channels, out_channels)
         )
 
     def forward(self, x):
-        d1 = self.down1(x)
-        d2 = self.down2(d1)
-        d3 = self.down3(d2)
-        d4 = self.down4(d3)
+        return self.down(x)
 
-        u1 = self.up1(d4, d3)
-        u2 = self.up2(u1, d2)
-        u3 = self.up3(u2, d1)
+class Up(nn.Module):
+    def __init__(self, in_channels, out_channels, bilinear=True):
+        super().__init__()
 
-        output = self.final(u3)
+        if bilinear:
+            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        else:
+            self.up = nn.ConvTranspose2d(in_channels // 2, in_channels // 2, 2, stride=2)
+
+        self.conv = DoubleConv(in_channels + out_channels, out_channels)
+
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+        diff_y = x2.size()[2] - x1.size()[2]
+        diff_x = x2.size()[3] - x1.size()[3]
+
+        x1 = F.pad(x1, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2])
+
+        x = torch.cat([x2, x1], dim=1)
+        return self.conv(x)
+
+
+class VirtualTryOnUNet(nn.Module):
+    def __init__(self, bilinear=True):
+        super().__init__()
+        self.bilinear = bilinear
+
+        # Encoder
+        self.inc = DoubleConv(7, 64) # 3 (agnostic) + 3 (cloth) + 1 (cloth_mask) # total 18 if segmentation
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 256)
+        self.down3 = Down(256, 512)
+        self.down4 = Down(512, 1024)
+
+        # Decoder
+        self.up1 = Up(1024, 512, bilinear)
+        self.up2 = Up(512, 256, bilinear)
+        self.up3 = Up(256, 128, bilinear)
+        self.up4 = Up(128, 64, bilinear)
+
+        # Output
+        self.outc = nn.Sequential(
+            nn.Conv2d(64, 4, kernel_size=1),
+            nn.Tanh()
+        )
+        self.dropout = nn.Dropout(0.5)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        x = self.dropout(x)
+        output = self.outc(x)
 
         p_rendered, m_composite = torch.split(output, 3, 1)
         p_rendered = torch.tanh(p_rendered)
@@ -85,20 +226,21 @@ class VirtualTryOnUNet(nn.Module):
         return p_rendered, m_composite
 
 
+
 def train_tom(opt, train_loader, model, board):
     model.cuda()
     model.train()
 
     # criterion
     criterionL1 = nn.L1Loss()
-    #criterionVGG = VGGLoss()
+    criterionVGG = VGGLoss()
     criterionMask = nn.L1Loss()
-    loss_fn_alex = lpips.LPIPS(net='alex').cuda()
 
         # optimizer
     optimizer = torch.optim.Adam(
         model.parameters(), lr=opt.lr, betas=(0.5, 0.999))
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda step: 1.0 - max(0, step - opt.keep_step) / float(opt.decay_step + 1))
+
 
 
     # In the training loop
@@ -111,19 +253,21 @@ def train_tom(opt, train_loader, model, board):
         # save body image for debugging as a pictur
         c = inputs['cloth'].cuda()
         cm = inputs['cloth_mask'].cuda()
+        seg = inputs['body_label'].cuda()
 
         # Forward pass
-        p_rendered, m_composite = model(torch.cat([agnostic, c, cm], 1))
+        p_rendered, m_composite = model(torch.cat([agnostic, c, cm,seg], 1))
 
         # Compute p_tryon
         p_tryon = c * m_composite + p_rendered * (1 - m_composite)
 
         # Calculate losses
         loss_l1 = criterionL1(p_tryon, im)
-        perceptual_loss = loss_fn_alex(p_tryon, im)
-        #loss_vgg = criterionVGG(p_tryon, im)
+        loss_vgg = criterionVGG(p_tryon, im)
+        ssim_loss = 1 - ssim( p_tryon, im, data_range=255, size_average=True)
+
         loss_mask = criterionMask(m_composite, cm)
-        loss = loss_l1 + perceptual_loss + loss_mask
+        loss = loss_l1 + loss_vgg + loss_mask + 0.1 * ssim_loss
 
         # Update weights
         optimizer.zero_grad()
@@ -143,21 +287,17 @@ def train_tom(opt, train_loader, model, board):
             board.add_scalar('metric', loss.item(), step)
             board.add_scalar('L1', loss_l1.item(), step)
             board.add_scalar('VGG', loss_vgg.item(), step)
-            board.add_scalar('Mask', loss_mask.item(), step)
+            board.add_scalar('ssim_loss', ssim_loss, step)
             board.add_scalar('lr', optimizer.param_groups[0]['lr'], step)
             t = time.time() - iter_start_time
-            print('step: %8d, time: %.3f, loss: %.4f, l1: %.4f, vgg: %.4f, mask: %.4f'
+            print('step: %8d, time: %.3f, loss: %.4f, l1: %.4f, vgg: %.4f, ssim_loss: %.4f'
                   % (step+1, t, loss.item(), loss_l1.item(),
-                     loss_vgg.item(), loss_mask.item()), flush=True)
+                     loss_vgg.item(), ssim_loss), flush=True)
 
         # Save checkpoints
         if (step + 1) % opt.save_count == 0:
             save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%07d.pth' % (step + 1)))
     
-
-        # save checkpoint at the 50th step
-        if step == 21:
-            save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%07d.pth' % (step + 1)))
 
 
 
@@ -197,7 +337,7 @@ def main():
 def get_opt():
     parser = argparse.ArgumentParser()
     # Name of the GMM or TOM model
-    parser.add_argument("--name", default="GMM")
+    parser.add_argument("--name", default="TOM_with_CPVTON_LIKE_WITH_SSIM_with_seg")
     # parser.add_argument("--name", default="TOM")
 
     # Add multiple workers support
@@ -267,10 +407,3 @@ if __name__ == "__main__":
     main()
 
 
-
-# tensor = torch.rand(1, 3, 256, 192)
-# tensor = tensor.permute(0, 2, 3, 1).cpu().detach().numpy()
-# image = Image.fromarray((tensor[0] * 255).astype('uint8'))
-
-# # Save the image
-# image.save('tensor_image.png')

@@ -22,6 +22,119 @@ from torchvision import transforms
 # import save_image
 from torchvision.utils import save_image
 
+# Model used for tom_with_adv_loss
+# class Generator(nn.Module):
+#     def __init__(self):
+#         super(Generator, self).__init__()
+#         self.conv = nn.Conv2d(7, 3, kernel_size=3, stride=1, padding=1)
+
+#     def forward(self, x):
+#         x = self.conv(x)
+#         return x
+
+
+# model used for tom_with_adv_loss_deeper_network
+# class Generator(nn.Module):
+#     def __init__(self):
+#         super(Generator, self).__init__()
+#         self.model = nn.Sequential(
+#             nn.Conv2d(7, 64, kernel_size=3, stride=1, padding=1),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(128),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(256),
+#             nn.ReLU(inplace=True),
+#             nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
+#             nn.BatchNorm2d(128),
+#             nn.ReLU(inplace=True),
+#             nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+#             nn.BatchNorm2d(64),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(64, 3, kernel_size=3, stride=1, padding=1),
+#             nn.Tanh()
+#         )
+
+#     def forward(self, x):
+#         x = self.model(x)
+#         return x
+
+
+# Model used for TOM_with_adversarial_loss_complex_with_seg_higher_batch_size_16 it takes seg as well
+class UNetDown(nn.Module):
+    def __init__(self, in_channels, out_channels, normalization=True, dropout=0.0):
+        super(UNetDown, self).__init__()
+        layers = [nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1, bias=False)]
+        if normalization:
+            layers.append(nn.InstanceNorm2d(out_channels))
+        layers.append(nn.LeakyReLU(0.2))
+        if dropout:
+            layers.append(nn.Dropout(dropout))
+        self.model = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.model(x)
+
+class UNetUp(nn.Module):
+    def __init__(self, in_channels, out_channels, dropout=0.0):
+        super(UNetUp, self).__init__()
+        layers = [
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.InstanceNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        ]
+        if dropout:
+            layers.append(nn.Dropout(dropout))
+
+        self.model = nn.Sequential(*layers)
+
+    def forward(self, x, skip_input):
+        x = self.model(x)
+        x = torch.cat((x, skip_input), 1)
+        return x
+
+class Generator(nn.Module):
+    def __init__(self):
+        super(Generator, self).__init__()
+
+        def conv_block(in_channels, out_channels, kernel_size=3, stride=2, padding=1, use_batch_norm=True):
+            block = [nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)]
+            if use_batch_norm:
+                block.append(nn.BatchNorm2d(out_channels))
+            block.append(nn.ReLU(inplace=True))
+            return block
+
+        def deconv_block(in_channels, out_channels, kernel_size=3, stride=2, padding=1, output_padding=1, use_batch_norm=True):
+            block = [nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, output_padding, bias=False)]
+            if use_batch_norm:
+                block.append(nn.BatchNorm2d(out_channels))
+            block.append(nn.ReLU(inplace=True))
+            return block
+
+        self.encoder = nn.Sequential(
+            *conv_block(18, 64, use_batch_norm=False),
+            *conv_block(64, 128),
+            *conv_block(128, 256),
+            *conv_block(256, 512),
+            *conv_block(512, 512)
+        )
+
+        self.decoder = nn.Sequential(
+            *deconv_block(512, 512),
+            *deconv_block(512, 256),
+            *deconv_block(256, 128),
+            *deconv_block(128, 64),
+            nn.ConvTranspose2d(64, 3, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
+
+
 def main():
     opt = get_opt()
     opt.train_size = 0.9
@@ -40,25 +153,25 @@ def main():
 
         
     # Replace with the path to your saved checkpoint
-    checkpoint_path = '/scratch/c.c1984628/my_diss/tom/checkpoints/vitonTOM/step_0100000.pth'
+    checkpoint_path = '/scratch/c.c1984628/my_diss/checkpoints/TOM_with_adversarial_loss_complex_with_seg_higher_batch_size_16/tom_adv_loss_final.pth'
 
     # Load the model from the checkpoint
-    model = VirtualTryOnUNet().cuda()
+    model = Generator().cuda()
     model.load_state_dict(torch.load(checkpoint_path))
     model.eval()
 
     inputs = train_loader.next_batch()
 
     # Image you want to put new clothes on
-    given_image = "000003_0.jpg"
 
-    # Cloth you want to put on the image
-    given_cloth = "000004_1.jpg"
+    # given_image = "000003_0.jpg"
 
+    # # Cloth you want to put on the image
+    # given_cloth = "000004_1.jpg"
     # Get the index of the image and cloth in the dataset
 
     #source = dataset[33]
-    target = dataset[4558]
+    target = dataset[48]
 
     # Use BPGM to generate the warped cloth and mask
 
@@ -73,20 +186,28 @@ def main():
     c = c.cuda().unsqueeze(0)
 
     cm = target['cloth_mask'].cuda().unsqueeze(0)
+    seg = target['body_label'].cuda().unsqueeze(0)
 
 
-    # Run the model on the input
-    with torch.no_grad():
-        p_rendered, m_composite = model(torch.cat([agnostic, c, cm], 1))
+    # # Run the model on the input
+    # with torch.no_grad():
+    #     p_rendered, m_composite = model(torch.cat([agnostic, c, cm], 1))
 
-    # Compute p_tryon
-    p_tryon = c * m_composite + p_rendered * (1 - m_composite)
+    # # Compute p_tryon
+    # p_tryon = c * m_composite + p_rendered * (1 - m_composite)
+
+    p_tryon = model(torch.cat([agnostic, c, cm,seg], 1))
+
 
 
 
     # Save the output image
     output_dir = '/scratch/c.c1984628/my_diss/tom/testing_tom/'
     os.makedirs(output_dir, exist_ok=True)
+    # decrease brightness and contrast of the tryon result
+    # brightness and contrast are multiplied by 0.5
+    p_tryon = p_tryon * 0.5
+
     save_image(p_tryon, os.path.join(output_dir, 'tryon_result_with_old_GMM.png'))
 
     # also save cloth and im_0

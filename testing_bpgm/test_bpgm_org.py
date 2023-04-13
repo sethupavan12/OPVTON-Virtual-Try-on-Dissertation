@@ -130,8 +130,8 @@ def main():
         #     continue
         
         # images = dataset[1]
-        given_image = "006288_0.jpg"
-        target_image = "006289_0.jpg"
+        given_image = "000095_0.jpg"
+        target_image = "000096_0.jpg"
 
 
         given_index = find_index(dataset, given_image)
@@ -168,6 +168,13 @@ def main():
 
         # DEAL WITH ORIGINAL
         tc = images['target_cloth'].unsqueeze(0).cuda()
+        tc_for_save = images['target_cloth']
+        # convert to array and save
+        tc_for_save = tc_for_save / 2 + 0.5
+        tc_for_save = tc_for_save.permute(1, 2, 0).numpy()
+        tc_for_save = (tc_for_save * 255).astype(np.uint8)
+
+
         tcm = images['target_cloth_mask'].unsqueeze(0).cuda()
         im_bm = images['body_mask'].unsqueeze(0).cuda()
         im_label = images['body_label'].unsqueeze(0).cuda()
@@ -196,6 +203,10 @@ def main():
         # save the original image to the sample folder
         im.save(os.path.join("/scratch/c.c1984628/my_diss/testing_bpgm", "given.png"))
 
+        # save target cloth to the sample folder
+        im = Image.fromarray(tc_for_save).save("/scratch/c.c1984628/my_diss/testing_bpgm/original/target_cloth_original.png")
+
+        
 
 
         im = Image.fromarray(warped_cloth).save("/scratch/c.c1984628/my_diss/testing_bpgm/original/warped_cloth_original.png")
