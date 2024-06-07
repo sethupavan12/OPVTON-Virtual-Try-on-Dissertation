@@ -20,3 +20,5 @@ Recent Image-based Virtual Try On (VTON) methods have gained widespread attentio
 ## Maintaining
 I want to make this repo as clean as possible. Given that this is a bit of a niche field, I have other ideas but sadly no time to make it happen.
 Will clean the code base and add sensible instructions later.
+
+note: I leftout the controlnet code part from this repo 
