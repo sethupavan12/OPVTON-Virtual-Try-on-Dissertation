@@ -13,13 +13,10 @@ Recent Image-based Virtual Try On (VTON) methods have gained widespread attentio
 ![image](https://github.com/sethupavan12/OPVTON-Virtual-Try-on-Dissertation/assets/60856766/ed26ff4c-e0c6-4d7e-8157-d6ac3a71229f)
 
 
-### Maintaining
-I want to make this repo as clean as possible. Given that this is a bit of a niche field, I have other ideas but sadly no time to make it happen.
-Will clean the code base and add sensible instructions later.
-
 # Quantitative Comparision of OPVTON and other SOTA models
 ![image](https://github.com/sethupavan12/OPVTON-Virtual-Try-on-Dissertation/assets/60856766/a618db8e-85ea-4fdc-ba4c-b30917d5ebb3)
 
 
-
-# 
+## Maintaining
+I want to make this repo as clean as possible. Given that this is a bit of a niche field, I have other ideas but sadly no time to make it happen.
+Will clean the code base and add sensible instructions later.
